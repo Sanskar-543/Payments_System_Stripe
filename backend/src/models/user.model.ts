@@ -18,6 +18,8 @@ export const user = pgTable(
 
     passwordHash: text("password_hash").notNull(),
 
+    refreshToken: text("refreshToken").notNull(),
+
     usernameLastChangedAt: timestamp("username_last_changed_at", {
       withTimezone: true,
     }),

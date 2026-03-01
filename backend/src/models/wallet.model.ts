@@ -1,5 +1,5 @@
 import { pgTable, uuid, timestamp, bigint, check } from "drizzle-orm/pg-core";
-import { user } from "./user.model.ts";
+import { user } from "./user.model";
 import { sql } from "drizzle-orm";
 
 export const wallet = pgTable(

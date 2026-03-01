@@ -10,9 +10,9 @@ import {
   Index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { user } from "./user.model.ts";
-import { operation } from "./operation.model.ts";
-import { payment } from "./payment.model.ts";
+import { user } from "./user.model";
+import { operation } from "./operation.model";
+import { payment } from "./payment.model";
 
 export const creditEntryType = pgEnum("creditEntryType", [
   "CREDIT",

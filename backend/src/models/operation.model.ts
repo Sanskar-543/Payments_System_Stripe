@@ -14,7 +14,7 @@ import {
 import { sql } from "drizzle-orm";
 import { user } from "./user.model";
 import { resume } from "./resume.model";
-import { careerprofile } from "./careerProfile.model";
+import { careerProfile } from "./careerProfile.model";
 
 export const statusType = pgEnum("statusType", [
   "PENDING",
@@ -42,7 +42,7 @@ export const operation = pgTable(
       .references(() => resume.id),
     careerProfile_id: uuid("careerProfile_id")
       .notNull()
-      .references(() => careerprofile.id),
+      .references(() => careerProfile.id),
     feature: featureType("feature"),
     cost: bigint("cost", { mode: "bigint" }).notNull(),
     status: statusType("status"),
