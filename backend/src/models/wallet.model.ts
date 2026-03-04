@@ -1,15 +1,14 @@
 import { pgTable, uuid, timestamp, bigint, check } from "drizzle-orm/pg-core";
-import { user } from "./user.model";
+import { users } from "./user.model";
 import { sql } from "drizzle-orm";
 
-export const wallet = pgTable(
+export const wallets = pgTable(
   "wallets",
   {
-    id: uuid("id").primaryKey(),
-    user_id: uuid("id").references(() => user.id, { onDelete: "cascade" }),
-    cachedBalance: bigint("cached_balance", { mode: "number" })
+    user_id: uuid("id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+    cachedBalance: bigint("cached_balance", { mode: "bigint" })
       .notNull()
-      .default(0),
+      .default(0n),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

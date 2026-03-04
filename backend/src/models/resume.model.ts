@@ -8,16 +8,16 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-import { user } from "./user.model";
+import { users } from "./user.model";
 
-export const resume = pgTable(
+export const resumes = pgTable(
   "resumes",
   {
-    id: uuid("id").primaryKey().notNull(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
 
     userId: uuid("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "cascade" }),
 
     name: text("name").notNull(),
 

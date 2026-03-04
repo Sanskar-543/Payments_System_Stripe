@@ -12,9 +12,9 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { user } from "./user.model";
-import { resume } from "./resume.model";
-import { careerProfile } from "./careerProfile.model";
+import { users } from "./user.model";
+import { resumes } from "./resume.model";
+import { careerProfiles } from "./careerProfile.model";
 
 export const statusType = pgEnum("statusType", [
   "PENDING",
@@ -30,19 +30,19 @@ export const featureType = pgEnum("featureType", [
   "ROADMAP",
 ]);
 
-export const operation = pgTable(
+export const operations = pgTable(
   "operations",
   {
-    id: uuid("id").notNull().primaryKey(),
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
     user_id: uuid("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => users.id),
     resume_id: uuid("resume_id")
       .notNull()
-      .references(() => resume.id),
+      .references(() => resumes.id),
     careerProfile_id: uuid("careerProfile_id")
       .notNull()
-      .references(() => careerProfile.id),
+      .references(() => careerProfiles.id),
     feature: featureType("feature"),
     cost: bigint("cost", { mode: "bigint" }).notNull(),
     status: statusType("status"),

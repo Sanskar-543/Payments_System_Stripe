@@ -9,7 +9,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { user } from "./user.model";
+import { users } from "./user.model";
 import { check } from "drizzle-orm/gel-core";
 import { sql } from "drizzle-orm";
 
@@ -19,14 +19,14 @@ export const statusType = pgEnum("statusType", [
   "FAILED",
 ]);
 
-export const payment = pgTable(
+export const payments = pgTable(
   "payments",
   {
-    id: uuid("id").notNull().primaryKey(),
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
 
     user_id: uuid("user_id")
       .notNull()
-      .references(() => user.id, {onDelete: "cascade"}),
+      .references(() => users.id, {onDelete: "cascade"}),
 
     amount_minor: bigint("amount_minor", { mode: "bigint" }).notNull(),
 

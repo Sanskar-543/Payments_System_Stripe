@@ -10,9 +10,9 @@ import {
   Index,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { user } from "./user.model";
-import { operation } from "./operation.model";
-import { payment } from "./payment.model";
+import { users } from "./user.model";
+import { operations } from "./operation.model";
+import { payments } from "./payment.model";
 
 export const creditEntryType = pgEnum("creditEntryType", [
   "CREDIT",
@@ -26,20 +26,20 @@ export const reservationStatusType = pgEnum("reservationStatus", [
   "RELEASED",
 ]);
 
-export const creditLedger = pgTable(
+export const creditLedgers = pgTable(
   "creditLedger",
   {
-    id: uuid("id").primaryKey().notNull(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
 
     user_id: uuid("user_id")
       .notNull()
-      .references(() => user.id),
+      .references(() => users.id),
 
-    operation_id: uuid("operation_id").references(() => operation.id, {
+    operation_id: uuid("operation_id").references(() => operations.id, {
       onDelete: "cascade",
     }),
 
-    payment_id: uuid("payment_id").references(() => payment.id, {
+    payment_id: uuid("payment_id").references(() => payments.id, {
       onDelete: "cascade",
     }),
 

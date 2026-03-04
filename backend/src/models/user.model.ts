@@ -6,7 +6,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const user = pgTable(
+export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -18,7 +18,7 @@ export const user = pgTable(
 
     passwordHash: text("password_hash").notNull(),
 
-    refreshToken: text("refreshToken").notNull(),
+    refreshToken: text("refreshToken"),
 
     usernameLastChangedAt: timestamp("username_last_changed_at", {
       withTimezone: true,
