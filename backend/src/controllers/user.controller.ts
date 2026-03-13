@@ -13,7 +13,6 @@ import { ApiResponse } from "../utils/ApiResponse";
 import jwt from "jsonwebtoken";
 import { careerProfiles } from "../models/careerProfile.model";
 
-
 const cookieOptions = {
   httpOnly: true,
   secure: true,
@@ -217,17 +216,16 @@ const logoutUser = asyncHandler(
 const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     try {
-
       const incomingrefreshToken =
-      (await req.cookies?.refreshToken) || req.body?.refreshToken;
+        (await req.cookies?.refreshToken) || req.body?.refreshToken;
 
       if (!incomingrefreshToken) {
-      throw new ApiError(404, "Refresh Token not Found");
+        throw new ApiError(404, "Refresh Token not Found");
       }
 
       const decodedToken = jwt.verify(
         incomingrefreshToken,
-        process.env.REFRESH_TOKEN_SECRET
+        process.env.REFRESH_TOKEN_SECRET,
       );
 
       const user_id = decodedToken?.id;
@@ -246,142 +244,160 @@ const refreshAccessToken = asyncHandler(
         throw new ApiError(401, "Invalid credentials");
       }
       const user = result[0];
-      const isRefreshTokenCorrect = await compareString(decodedToken,user.refreshToken)
+      const isRefreshTokenCorrect = await compareString(
+        decodedToken,
+        user.refreshToken,
+      );
 
-      if(!isRefreshTokenCorrect){
-        throw new ApiError(401,"Invalid Session");
+      if (!isRefreshTokenCorrect) {
+        throw new ApiError(401, "Invalid Session");
       }
 
-      const {refreshToken,accessToken} = await issueTokens(user.id, user.fullname);
+      const { refreshToken, accessToken } = await issueTokens(
+        user.id,
+        user.fullname,
+      );
 
-      return res.status(200)
-      .cookie("accessToken", accessToken, cookieOptions)
-      .cookie("refreshToken", refreshToken, cookieOptions)
-      .json(new ApiResponse(200,{},"Tokens Refreshed successfully"));
-      
+      return res
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json(new ApiResponse(200, {}, "Tokens Refreshed successfully"));
     } catch (error) {
-      throw new ApiError(500,"Error while refreshing tokens");
+      throw new ApiError(500, "Error while refreshing tokens");
     }
   },
 );
 
-const changePassword = asyncHandler(async (req: Request, res: Response) => {
-  const { oldPassword, newPassword } = req.body;
-  const userId = req.user.id;
+const changePassword = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.id;
 
-  const result = await db
-    .select({ password: users.passwordHash })
-    .from(users)
-    .where(eq(users.id, userId));
+    const result = await db
+      .select({ password: users.passwordHash })
+      .from(users)
+      .where(eq(users.id, userId));
 
-  const user = result[0];
+    const user = result[0];
 
-  const isValid = await compareString(oldPassword, user.password);
+    const isValid = await compareString(oldPassword, user.password);
 
-  if (!isValid) {
-    throw new ApiError(401, "Invalid password");
-  }
-
-  const hashed = await hashString(newPassword);
-
-  await db
-    .update(users)
-    .set({
-      passwordHash: hashed,
-      refreshToken: null
-    })
-    .where(eq(users.id, userId));
-
-  return res.json(
-    new ApiResponse(200, {}, "Password changed")
-  );
-});
-
-const changeUserDetails = asyncHandler(async (req: Request, res: Response) => {
-  const { fullName, username } = req.body;
-  const userId = req.user.id;
-
-  const result = await db
-    .select({
-      usernameLastChangedAt: users.usernameLastChangedAt
-    })
-    .from(users)
-    .where(eq(users.id, userId));
-
-  const user = result[0];
-
-  if (username) {
-    const lastUpdate = user.usernameLastChangedAt;
-
-    if (
-      lastUpdate &&
-      Date.now() - new Date(lastUpdate).getTime() <
-        30 * 24 * 60 * 60 * 1000
-    ) {
-      throw new ApiError(
-        400,
-        "Username can only be changed once in 30 days"
-      );
+    if (!isValid) {
+      throw new ApiError(401, "Invalid password");
     }
-  }
 
-  await db
-    .update(users)
-    .set({
-      fullName,
-      username,
-      usernameLastChangedAt: username ? new Date() : undefined
-    })
-    .where(eq(users.id, userId));
+    const hashed = await hashString(newPassword);
 
-  return res.json(
-    new ApiResponse(200, {}, "Profile updated")
-  );
-});
+    await db
+      .update(users)
+      .set({
+        passwordHash: hashed,
+        refreshToken: null,
+      })
+      .where(eq(users.id, userId));
 
-const getUserResume = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+    return res.json(new ApiResponse(200, {}, "Password changed"));
+  },
+);
 
-  const resume = await db
-    .select()
-    .from(resumes)
-    .where(eq(resumes.userId, userId));
+const changeUserDetails = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { fullName, username } = req.body;
+    const userId = req.user.id;
 
-  return res.json(
-    new ApiResponse(200, resume[0] ?? null,"Resume fetched successfully")
-  );
-});
+    const result = await db
+      .select({
+        usernameLastChangedAt: users.usernameLastChangedAt,
+      })
+      .from(users)
+      .where(eq(users.id, userId));
 
-const getUserWallet = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+    const user = result[0];
 
-  const result = await db
-    .select({
-      balance: wallets.cachedBalance
-    })
-    .from(wallets)
-    .where(eq(wallets.user_id, userId));
+    if (username) {
+      const lastUpdate = user.usernameLastChangedAt;
 
-  return res.json(
-    new ApiResponse(200, result[0], "Wallet fetched Successfully")
-  );
-});
+      if (
+        lastUpdate &&
+        Date.now() - new Date(lastUpdate).getTime() < 30 * 24 * 60 * 60 * 1000
+      ) {
+        throw new ApiError(400, "Username can only be changed once in 30 days");
+      }
+    }
 
-const getUserCareerProfile = asyncHandler(async (
-  req: Request,
-  res: Response
-) => {
-  const userId = req.user.id;
+    await db
+      .update(users)
+      .set({
+        fullName,
+        username,
+        usernameLastChangedAt: username ? new Date() : undefined,
+      })
+      .where(eq(users.id, userId));
 
-  const profile = await db
-    .select()
-    .from(careerProfiles)
-    .where(eq(careerProfiles.userId, userId));
+    return res.json(new ApiResponse(200, {}, "Profile updated"));
+  },
+);
 
-  return res.json(
-    new ApiResponse(200, profile[0] ?? null,"Career profile fetched Successfully")
-  );
-});
+const getUserResume = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user.id;
 
+    const resume = await db
+      .select()
+      .from(resumes)
+      .where(eq(resumes.userId, userId));
 
-export { signUpUser, loginUser, logoutUser, refreshAccessToken, changePassword, changeUserDetails, getUserResume, getUserWallet, getUserCareerProfile };
+    return res.json(
+      new ApiResponse(200, resume[0] ?? null, "Resume fetched successfully"),
+    );
+  },
+);
+
+const getUserWallet = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user.id;
+
+    const result = await db
+      .select({
+        balance: wallets.cachedBalance,
+      })
+      .from(wallets)
+      .where(eq(wallets.user_id, userId));
+
+    return res.json(
+      new ApiResponse(200, result[0], "Wallet fetched Successfully"),
+    );
+  },
+);
+
+const getUserCareerProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user.id;
+
+    const profile = await db
+      .select()
+      .from(careerProfiles)
+      .where(eq(careerProfiles.userId, userId));
+
+    return res.json(
+      new ApiResponse(
+        200,
+        profile[0] ?? null,
+        "Career profile fetched Successfully",
+      ),
+    );
+  },
+);
+
+export {
+  signUpUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changePassword,
+  changeUserDetails,
+  getUserResume,
+  getUserWallet,
+  getUserCareerProfile,
+};

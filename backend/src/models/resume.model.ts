@@ -27,6 +27,8 @@ export const resumes = pgTable(
 
     metadata: jsonb("metadata"),
 
+    summary: jsonb("summary").notNull(),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
