@@ -70,4 +70,13 @@ const replaceonCloudinary = async (
   }
 };
 
-export { uploadonCloudinary, replaceonCloudinary };
+const deletefromCloudinary = async (oldfileURL: string): Promise<void> => {
+  const oldfilePublicId = oldfileURL
+      .split("/upload/")[1]
+      .replace(/^v\d+\//, "")
+      .replace(/\.[^/.]+$/, "");
+
+    await cloudinary.uploader.destroy(oldfilePublicId);
+}
+
+export { uploadonCloudinary, replaceonCloudinary, deletefromCloudinary };

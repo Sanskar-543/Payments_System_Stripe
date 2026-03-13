@@ -9,6 +9,13 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { users } from "./user.model";
+import { pgEnum } from "drizzle-orm/pg-core";
+
+export const statusType = pgEnum("statusType", [
+  "PROCESSING",
+  "EXTRACTING",
+  "READY",
+]);
 
 export const resumes = pgTable(
   "resumes",
@@ -20,6 +27,10 @@ export const resumes = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
 
     name: text("name").notNull(),
+
+    status: statusType("status"),
+
+    cloudinaryUrl: text("cloudinaryUrl").notNull(),
 
     rawText: text("raw_text").notNull(),
 
@@ -47,3 +58,5 @@ export const resumes = pgTable(
     }
   ]
 );
+
+export type resumetype = typeof resumes.$inferSelect;

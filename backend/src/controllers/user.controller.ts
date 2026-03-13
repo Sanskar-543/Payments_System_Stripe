@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
+import { ApiResponse } from "../utils/ApiResponse";
 import { db } from "../db";
 import { uploadonCloudinary } from "../utils/cloudinary";
 import { compareString, hashString } from "../utils/bcrypt";
@@ -9,7 +10,6 @@ import { wallets } from "../models/wallet.model";
 import { resumes } from "../models/resume.model";
 import { generateAccessToken, generateRefreshToken } from "../utils/Jwt";
 import { eq } from "drizzle-orm";
-import { ApiResponse } from "../utils/ApiResponse";
 import jwt from "jsonwebtoken";
 import { careerProfiles } from "../models/careerProfile.model";
 
