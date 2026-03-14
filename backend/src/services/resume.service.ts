@@ -10,7 +10,7 @@ const createInitialRecord = async (
   resumelocalpath: string,
   user_id: string,
 ): Promise<resumetype> => {
-  // TODO: Implement actual logic to create and return a Resumetype record
+
   const cloudResume = await uploadonCloudinary(resumelocalpath);
   if (!cloudResume) {
       throw new ApiError(500, "Cloudinary : Upload Failed");

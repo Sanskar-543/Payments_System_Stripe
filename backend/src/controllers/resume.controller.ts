@@ -39,7 +39,7 @@ const uploadResume = asyncHandler(
           new ApiResponse(
             200,
             resumeDetails,
-            "resume details Successfully inserted",
+            "initial resume details Successfully inserted",
           ),
         );
     } catch (error) {

@@ -14,7 +14,11 @@ import { pgEnum } from "drizzle-orm/pg-core";
 export const statusType = pgEnum("statusType", [
   "PROCESSING",
   "EXTRACTING",
-  "READY",
+  "EXTRACTED",
+  "SUMMARY_PENDING",
+  "SUMMARIZED",
+  "AI_READY",
+  "FAILED",
 ]);
 
 export const resumes = pgTable(
