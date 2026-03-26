@@ -92,3 +92,6 @@ const startTextExtractor = async () => {
     throw new ApiError(500, "Error: Resume text Extractor Worker");
   }
 };
+
+
+export {startTextExtractor}

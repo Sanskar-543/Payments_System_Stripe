@@ -15,6 +15,7 @@ import { sql } from "drizzle-orm";
 import { users } from "./user.model";
 import { resumes } from "./resume.model";
 import { careerProfiles } from "./careerProfile.model";
+import { analysis } from "./analysis.model";
 
 
 
@@ -53,6 +54,8 @@ export const operations = pgTable(
     career_profile_id: uuid("career_profile_id")
       .notNull()
       .references(() => careerProfiles.id),
+    
+    analysis_id: uuid("analysis_id").notNull().references(() => analysis.id),
 
     feature: featureType("feature").notNull(),
 
@@ -73,8 +76,6 @@ export const operations = pgTable(
 
     model_name: text("model_name")
       .notNull(),
-
-    result: jsonb("result"),
 
     error: text("error"),
 
