@@ -28,9 +28,8 @@ export const statusType = pgEnum("operation_status", [
 ]);
 
 export const featureType = pgEnum("operation_feature", [
-  "RESUME",
-  "INTERVIEW_PREP",
-  "ROADMAP"
+  "SUMMARY",
+  "ANALYSIS"
 ]);
 
 
@@ -55,7 +54,7 @@ export const operations = pgTable(
       .notNull()
       .references(() => careerProfiles.id),
     
-    analysis_id: uuid("analysis_id").notNull().references(() => analysis.id),
+    analysis_id: uuid("analysis_id").references(() => analysis.id),
 
     feature: featureType("feature").notNull(),
 
@@ -64,9 +63,6 @@ export const operations = pgTable(
     status: statusType("status")
       .notNull()
       .default("PENDING"),
-
-    resume_text_snapshot: text("resume_text_snapshot")
-      .notNull(),
 
     profile_snapshot: jsonb("profile_snapshot")
       .notNull(),

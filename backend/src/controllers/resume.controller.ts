@@ -2,7 +2,10 @@ import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
-import { createInitialRecord } from "../services/resume.service";
+import {
+  createInitialRecord,
+  createResumeAnalysisOperation,
+} from "../services/resume.service";
 
 const cookieOptions = {
   httpOnly: true,
@@ -37,7 +40,7 @@ const uploadResume = asyncHandler(
         .status(200)
         .json(
           new ApiResponse(
-            200,
+            202,
             resumeDetails,
             "initial resume details Successfully inserted",
           ),
@@ -47,4 +50,29 @@ const uploadResume = asyncHandler(
     }
   },
 );
-export { uploadResume };
+const analyzeResume = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const user_id = req.user?.id;
+      const resumeDetails = req.resumeDetails;
+      const analysisDetails =
+        await createResumeAnalysisOperation(resumeDetails);
+
+     
+      res.status(202).json({
+        success: true,
+        message: "Analysis queued successfully.",
+        data: {
+          operation_id: analysisDetails.operation_id,
+          analysis_id: analysisDetails.analysis_id,
+        },
+      });
+    } catch (error) {
+      
+      console.error("AnalyzeResume Controller Error:", error);
+      throw new ApiError(500, "Failed to queue analysis operation");
+    }
+  },
+);
+
+export { uploadResume, analyzeResume };

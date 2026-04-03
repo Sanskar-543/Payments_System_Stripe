@@ -17,7 +17,6 @@ export const statusType = pgEnum("statusType", [
   "EXTRACTED",
   "SUMMARY_PENDING",
   "SUMMARIZED",
-  "AI_READY",
   "FAILED",
 ]);
 

@@ -22,8 +22,8 @@ export const analysis = pgTable("analysis", {
   targetCountry: text("targetCountry").notNull(),
   jobDescription: text("jobDescription").notNull(),
   matchScore: bigint("matchScore", { mode: "bigint" }),
-  gapAnalysis: jsonb("gapAnalysis").notNull(),
-  roadmap: jsonb("roadmap").notNull(),
-  projectIdeas: jsonb("projectIdeas").notNull(),
+  gapAnalysis: jsonb("gapAnalysis"),
+  roadmap: jsonb("roadmap"),
+  projectIdeas: jsonb("projectIdeas"),
   status: status_Type().notNull().default("PENDING"),
 });
