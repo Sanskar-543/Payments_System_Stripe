@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { operations } from "../models/operation.model";
 import { generateAiAnalysis, generateAISummary } from "./Ai.service";
 import { analysis } from "../models/analysis.model";
+import { creditLedgers } from "../models/creditLedger.model";
 
 const startTextExtractor = async () => {
   try {
@@ -163,7 +164,7 @@ const startResumeSummarizer = async () => {
               error: error.message || "Unknown error during summarization",
               completed_at: new Date(),
             })
-            .where(eq(operations.id, context.operation.id));
+            .where(eq(operations.id, context?.operation.id));
         });
       } catch (dbError) {
         throw new ApiError(500,"CRITICAL: Could not update failure status in DB")
@@ -174,13 +175,13 @@ const startResumeSummarizer = async () => {
 
 const startResumeAnalyzer = async () => {
   while (true) {
-    let currentOperationId = null;
-    let currentAnalysisId = null;
+    let currentOperationId: any = null;
+    let currentAnalysisId:any = null;
+    let currentUserId = null; // Added to track who to refund if it fails
 
     try {
       const job = await db.transaction(async (tx) => {
         return await claimResumeforAnalysis(tx); 
-        // ^ This naturally throws ApiError(409, "...") if data is missing
       });
 
       if (!job) {
@@ -190,13 +191,14 @@ const startResumeAnalyzer = async () => {
 
       currentOperationId = job.operation_id;
       currentAnalysisId = job.analysis_id;
+      // Ensure your claimResumeforAnalysis payload includes the user_id
+      currentUserId = job.resume.user_id; 
 
       const { resume, target } = job;
 
-      // Ensure generateAiAnalysis is updated to throw new ApiError(500, "...") internally
-      // if the Gemini API fails, rather than a standard Error.
       const analysisResult = await generateAiAnalysis(resume, target);
 
+      // --- SUCCESS TRANSACTION ---
       await db.transaction(async (tx) => {
         await tx.update(analysis).set({
           gapAnalysis: analysisResult.gapAnalysis,
@@ -209,20 +211,25 @@ const startResumeAnalyzer = async () => {
         await tx.update(operations).set({
           status: "COMPLETED"
         }).where(eq(operations.id, currentOperationId));
+
+        // FIXED: Keep as RESERVATION, just CONFIRM it.
+        await tx.update(creditLedgers).set({
+          reservationStatus: "CONFIRMED"
+        }).where(eq(creditLedgers.operation_id, currentOperationId));
       });
 
     } catch (error: any) {
-      // 1. Safely extract the custom ApiError properties
       const isApiError = error instanceof ApiError;
       const statusCode = isApiError ? error.statusCode : 500;
       const message = isApiError ? error.message : "Internal Worker Error";
       
       console.error(`[Worker Failed - ${statusCode}]: ${message}`);
 
-      // 2. The Fallback Handler
-      if (currentOperationId && currentAnalysisId) {
+      // --- FAILURE TRANSACTION (THE REFUND) ---
+      if (currentOperationId && currentAnalysisId && currentUserId) {
         try {
           await db.transaction(async (tx) => {
+            // 1. Mark states FAILED
             await tx.update(analysis)
               .set({ status: "FAILED" })
               .where(eq(analysis.id, currentAnalysisId));
@@ -230,16 +237,18 @@ const startResumeAnalyzer = async () => {
             await tx.update(operations)
               .set({ status: "FAILED" })
               .where(eq(operations.id, currentOperationId));
+
+            // 2. Release the Ledger Hold
+            await tx.update(creditLedgers)
+              .set({ reservationStatus: "RELEASED" })
+              .where(eq(creditLedgers.operation_id, currentOperationId));
+
           });
         } catch (dbError) {
-          // CRITICAL: We do NOT throw an ApiError here. 
-          // If the DB is down, throwing will kill the while(true) loop. 
-          // We must just log it and wait.
-          console.error("Critical DB Failure during fallback:", dbError);
+          console.error("Critical DB Failure during fallback refund:", dbError);
         }
       }
 
-      // 3. Error Backoff
       await new Promise((res) => setTimeout(res, 5000));
     }
   }

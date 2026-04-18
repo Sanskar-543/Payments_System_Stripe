@@ -15,6 +15,7 @@ export const status_Type = pgEnum("status_Type", [
 
 export const analysis = pgTable("analysis", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
+  user_id: uuid("user_id"),
   resume_id: uuid("resume_id")
     .notNull()
     .references(() => resumes.id),

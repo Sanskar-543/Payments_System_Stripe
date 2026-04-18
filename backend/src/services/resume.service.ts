@@ -8,6 +8,7 @@ import { operations } from "../models/operation.model";
 import { time } from "drizzle-orm/pg-core";
 import { hasBalance } from "./wallet.service";
 import { analysis } from "../models/analysis.model";
+import { creditLedgers } from "../models/creditLedger.model";
 
 const createInitialRecord = async (
   resumeName: string,
@@ -37,7 +38,7 @@ const createInitialRecord = async (
 
     return insertedResume as resumetype;
   } catch (error) {
-    if (error?.code === "23505") {
+    if ((error as any)?.code === "23505") {
       await deletefromCloudinary(cloudResume?.url);
       throw new ApiError(409, "Resume Name Already exixsts");
     }
@@ -129,7 +130,7 @@ const claimResumeforSummary = async (tx: any) => {
   };
 };
 
-const createResumeAnalysisOperation = async (resumeDetails: any) => {
+const createResumeAnalysisOperation = async (user_id:any,resumeDetails: any) => {
   try {
     const {
       resume,
@@ -144,6 +145,7 @@ const createResumeAnalysisOperation = async (resumeDetails: any) => {
       const [newAnalysis] = await tx
         .insert(analysis)
         .values({
+          user_id: user_id,
           resume_id: resume.id,
           targetRole: target_role,
           targetCountry: target_country,
@@ -157,12 +159,19 @@ const createResumeAnalysisOperation = async (resumeDetails: any) => {
         analysis_id: newAnalysis.id,
         career_profile_id: profile_snapshot.id,
         feature: "ANALYSIS",
-        cost: BigInt(process.env.ANALYSIS_COST),
+        cost: BigInt(process.env.ANALYSIS_COST as string),
         profile_snapshot: profile_snapshot,
         prompt_version: "test",
-        model_name: process.env.ANALYSIS_MODEL,
+        model_name: process.env.ANALYSIS_MODEL as string,
       }).returning();
 
+      await tx.insert(creditLedgers).values({
+        user_id: user_id,
+        operation_id: newOperation.id,
+        delta: BigInt(-20) || BigInt(process.env.ANALYSIS_COST as string),
+        entryType: "RESERVATION",
+        reservationStatus: "PENDING"
+      })
       
 
       return {
@@ -232,6 +241,9 @@ const claimResumeforAnalysis = async (tx: any) => {
       .set({ status: "PROCESSING" })
       .where(eq(operations.id, target.id));
 
+    await tx.update(creditLedgers).set({
+      reservationStatus: "CONFIRMED"
+    }).where(eq(creditLedgers.operation_id, target.id))
    
     const job = {
       resume: resumeData,
@@ -240,7 +252,7 @@ const claimResumeforAnalysis = async (tx: any) => {
         target_role: analysisData.target_role,
         target_country: analysisData.target_country,
       },
-   
+      
       operation_id: target.id, 
       analysis_id: target.analysis_id
     };

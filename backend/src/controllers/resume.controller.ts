@@ -56,7 +56,7 @@ const analyzeResume = asyncHandler(
       const user_id = req.user?.id;
       const resumeDetails = req.resumeDetails;
       const analysisDetails =
-        await createResumeAnalysisOperation(resumeDetails);
+        await createResumeAnalysisOperation(user_id,resumeDetails);
 
      
       res.status(202).json({
