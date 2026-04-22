@@ -68,3 +68,7 @@ const verifyResume = asyncHandler(async (req: Request, _res, next) => {
   req.resumeDetails = resumeDetails;
   next();
 });
+
+
+
+export {verifyJWT,verifyResume}

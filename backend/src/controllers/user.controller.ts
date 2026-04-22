@@ -12,6 +12,7 @@ import { generateAccessToken, generateRefreshToken } from "../utils/Jwt";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import { careerProfiles } from "../models/careerProfile.model";
+import { analysis } from "../models/analysis.model";
 
 const cookieOptions = {
   httpOnly: true,
@@ -213,6 +214,36 @@ const logoutUser = asyncHandler(
   },
 );
 
+const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    const user = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        fullname: users.fullName,
+      })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if(user.length === 0){
+        throw new ApiError(404,"User not found");
+    }
+
+    const safeUser = {
+        id: user[0].id,
+        email: user[0].email,
+        username: user[0].username,
+        fullname: user[0].fullname,
+      };  
+    
+      return res
+        .status(200)
+        .json(new ApiResponse(200, safeUser, "User fetched successfully"));
+    
+  }
+)
 const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -301,7 +332,7 @@ const changePassword = asyncHandler(
   },
 );
 
-const changeUserDetails = asyncHandler(
+const updateUserDetails = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const { fullName, username } = req.body;
     const userId = req.user.id;
@@ -390,14 +421,33 @@ const getUserCareerProfile = asyncHandler(
   },
 );
 
+const getUserAnalysis = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userId = req.user.id;
+
+    const result = await db
+      .select()
+      .from(analysis)
+      .where(eq(analysis.user_id, userId));
+
+    return res.json(
+      new ApiResponse(
+        200,
+        result[0] ?? null,
+        "User analysis fetched Successfully",
+      ),
+    );
+});
+
 export {
   signUpUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
   changePassword,
-  changeUserDetails,
+  updateUserDetails,
   getUserResume,
   getUserWallet,
   getUserCareerProfile,
+  getUserAnalysis,
+  getCurrentUser
 };
