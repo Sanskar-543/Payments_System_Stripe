@@ -19,16 +19,20 @@ const verifyJWT = asyncHandler(async (req: Request, _res, next) => {
   const decoded = jwt.verify(
     token,
     process.env.ACCESS_TOKEN_SECRET as string,
-  ) as { id: string };
+  ) as { user_id: string };
 
-  req.user = { id: decoded.id };
+  req.user = { id: decoded.user_id };
 
   next();
 });
 
 const verifyResume = asyncHandler(async (req: Request, _res, next) => {
-  const user_id = req.user?.id;
+  const user_id = req.user!.id;
   const { resume_id, target_role, target_country, job_description } = req.body;
+
+  if (!user_id || !resume_id) {
+    throw new ApiError(400, "User ID and Resume ID are required");
+  }
 
   const result = await db
     .select({

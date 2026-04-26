@@ -102,7 +102,7 @@ const startTextExtractor = async () => {
 };
 
 const startResumeSummarizer = async () => {
-  let context = null;
+  let context: { resume: { id: string }; operation: { id: string } } | null = null;
   try {
     while (true) {
       const job = await db.transaction(async (tx) => {
@@ -115,7 +115,7 @@ const startResumeSummarizer = async () => {
       }
 
       const { resume, operation, rawText } = job;
-      console.log(`Summarizing Resume: ${resume.id}`);
+      context = { resume, operation };
 
       const aiResult = await generateAISummary(rawText, operation.profile_snapshot);
 
@@ -137,7 +137,7 @@ const startResumeSummarizer = async () => {
             status: "COMPLETED",
             completed_at: new Date(),
           })
-          .where(eq(operation.id, operations.id));
+          .where(eq(operations.id, operation.id));
       });
     }
   } catch (error: any) {
@@ -146,8 +146,9 @@ const startResumeSummarizer = async () => {
     // 4. INLINE ERROR RECOVERY
     // If a context exists, we must "Fail" the records so they aren't stuck
     if (context) {
+      const failedContext = context;
       console.log(
-        `Marking Resume ${context.resume.id} and Operation ${context.operation.id} as FAILED`,
+        `Marking Resume ${failedContext.resume.id} and Operation ${failedContext.operation.id} as FAILED`,
       );
 
       try {
@@ -155,7 +156,7 @@ const startResumeSummarizer = async () => {
           await tx
             .update(resumes)
             .set({ status: "FAILED", updatedAt: new Date() })
-            .where(eq(resumes.id, context.resume.id));
+            .where(eq(resumes.id, failedContext.resume.id));
 
           await tx
             .update(operations)
@@ -164,7 +165,7 @@ const startResumeSummarizer = async () => {
               error: error.message || "Unknown error during summarization",
               completed_at: new Date(),
             })
-            .where(eq(operations.id, context?.operation.id));
+            .where(eq(operations.id, failedContext.operation.id));
         });
       } catch (dbError) {
         throw new ApiError(500,"CRITICAL: Could not update failure status in DB")

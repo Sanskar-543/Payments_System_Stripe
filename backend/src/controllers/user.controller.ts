@@ -44,19 +44,10 @@ const issueTokens = async (user_id: string, fullname: string) => {
 };
 
 const signUpUser = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response) => {
     try {
+      // Body is already validated & transformed by Zod middleware
       const { email, username, fullName, password } = req.body;
-
-      const fields = { email, username, password, fullName };
-
-      const hasInvalidField = Object.values(fields).some(
-        (field) => typeof field !== "string" || field.trim().length === 0,
-      );
-
-      if (hasInvalidField) {
-        throw new ApiError(400, "All fields are required");
-      }
 
       const avatarlocalpath = req.file?.path;
       const cloudAvatar = await uploadonCloudinary(avatarlocalpath);
@@ -64,18 +55,15 @@ const signUpUser = asyncHandler(
         throw new ApiError(500, "Cloudinary : Upload Failed");
       }
 
-      const email_on_DB = email.trim().toLowerCase();
       const password_on_DB = await hashString(password);
-      const fullName_on_DB = fullName.trim();
-      const username_on_DB = username.trim();
 
       const createdUser = await db.transaction(async (tx) => {
         const inserted = await tx
           .insert(users)
           .values({
-            email: email_on_DB,
-            username: username_on_DB,
-            fullName: fullName_on_DB,
+            email,
+            username,
+            fullName,
             passwordHash: password_on_DB,
             refreshToken: "",
           })
@@ -127,21 +115,10 @@ const signUpUser = asyncHandler(
 );
 
 const loginUser = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     try {
+      // Body is already validated & transformed by Zod middleware
       const { email, password } = req.body;
-
-      const fields = { email, password };
-
-      const hasInvalidField = Object.values(fields).some(
-        (field) => typeof field !== "string" || field.trim().length === 0,
-      );
-
-      if (hasInvalidField) {
-        throw new ApiError(400, "Email and password are required");
-      }
-
-      const normalizedEmail = email.trim().toLowerCase();
 
       const result = await db
         .select({
@@ -152,7 +129,7 @@ const loginUser = asyncHandler(
           password: users.passwordHash,
         })
         .from(users)
-        .where(eq(users.email, normalizedEmail));
+        .where(eq(users.email, email));
 
       if (result.length === 0) {
         throw new ApiError(401, "Invalid credentials");
@@ -190,7 +167,7 @@ const loginUser = asyncHandler(
 );
 
 const logoutUser = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     const userId = req.user?.id;
 
     if (!userId) {
@@ -215,8 +192,8 @@ const logoutUser = asyncHandler(
 );
 
 const getCurrentUser = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user?.id;
+  async (req: Request, res: Response)=> {
+    const userId = req.user!.id;
     const user = await db
       .select({
         id: users.id,
@@ -245,7 +222,7 @@ const getCurrentUser = asyncHandler(
   }
 )
 const refreshAccessToken = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     try {
       const incomingrefreshToken =
         (await req.cookies?.refreshToken) || req.body?.refreshToken;
@@ -256,10 +233,10 @@ const refreshAccessToken = asyncHandler(
 
       const decodedToken = jwt.verify(
         incomingrefreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
-      );
+        process.env.REFRESH_TOKEN_SECRET as string,
+      ) as jwt.JwtPayload;
 
-      const user_id = decodedToken?.id;
+      const user_id = decodedToken.id as string;
       const result = await db
         .select({
           id: users.id,
@@ -276,8 +253,8 @@ const refreshAccessToken = asyncHandler(
       }
       const user = result[0];
       const isRefreshTokenCorrect = await compareString(
-        decodedToken,
-        user.refreshToken,
+        incomingrefreshToken,
+        user.refreshToken ?? "",
       );
 
       if (!isRefreshTokenCorrect) {
@@ -301,9 +278,9 @@ const refreshAccessToken = asyncHandler(
 );
 
 const changePassword = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     const { oldPassword, newPassword } = req.body;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     const result = await db
       .select({ password: users.passwordHash })
@@ -333,9 +310,9 @@ const changePassword = asyncHandler(
 );
 
 const updateUserDetails = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     const { fullName, username } = req.body;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     const result = await db
       .select({
@@ -371,8 +348,8 @@ const updateUserDetails = asyncHandler(
 );
 
 const getUserResume = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user.id;
+  async (req: Request, res: Response)=> {
+    const userId = req.user!.id;
 
     const resume = await db
       .select()
@@ -386,8 +363,8 @@ const getUserResume = asyncHandler(
 );
 
 const getUserWallet = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user.id;
+  async (req: Request, res: Response)=> {
+    const userId = req.user!.id;
 
     const result = await db
       .select({
@@ -403,8 +380,8 @@ const getUserWallet = asyncHandler(
 );
 
 const getUserCareerProfile = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user.id;
+  async (req: Request, res: Response)=> {
+    const userId = req.user!.id;
 
     const profile = await db
       .select()
@@ -421,8 +398,8 @@ const getUserCareerProfile = asyncHandler(
   },
 );
 
-const getUserAnalysis = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const userId = req.user.id;
+const getUserAnalysis = asyncHandler(async (req: Request, res: Response)=> {
+    const userId = req.user!.id;
 
     const result = await db
       .select()

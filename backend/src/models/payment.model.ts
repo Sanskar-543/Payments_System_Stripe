@@ -32,9 +32,12 @@ export const payments = pgTable(
 
     status: statusType("status"),
     currency: char("currency",{length: 3}).notNull(),
-    stripe_payment_intent_id: text("stripe_payment_intent_id")
+    razorpay_order_id: varchar("razorpay_order_id", { length: 255 })
       .unique()
       .notNull(),
+    razorpay_payment_id: varchar("razorpay_payment_id", { length: 255 })
+      .unique(),
+    razorpay_signature: text("razorpay_signature"),
 
     idempotency_key: text("idempotency_key").unique().notNull(),
 
@@ -42,7 +45,8 @@ export const payments = pgTable(
   },
   (table) => [{
     amountConstraint: check("amountConstraint",sql`${table.amount_minor} > 0`),
-    unique_stripe_payment_intent_id: uniqueIndex("unique_stripe_payment_intent_id").on(table.stripe_payment_intent_id),
+    unique_razorpay_order_id: uniqueIndex("unique_razorpay_order_id").on(table.razorpay_order_id),
+    unique_razorpay_payment_id: uniqueIndex("unique_razorpay_payment_id").on(table.razorpay_payment_id),
     unique_idempotency_key: uniqueIndex("unique_idempotency_key").on(table.idempotency_key)
   }],
 );

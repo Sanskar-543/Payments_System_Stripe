@@ -19,7 +19,7 @@ const safeUnlink = (filepath: string) => {
 };
 
 const uploadonCloudinary = async (
-  localfilepath: string
+  localfilepath: string | undefined
 ): Promise<UploadApiResponse | null> => {
   if (!localfilepath) return null;
 

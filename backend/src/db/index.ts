@@ -24,5 +24,5 @@ const connectDB = async (): Promise<void> => {
   }
 };
 
-export { db };
+export { db, pool };
 export default connectDB;

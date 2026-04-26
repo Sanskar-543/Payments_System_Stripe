@@ -14,15 +14,18 @@ const cookieOptions = {
 };
 
 const uploadResume = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     try {
       const resumeName = req.body;
-      const user_id = req.user?.id;
+      const user_id = req.user!.id;
       if (!resumeName || !user_id) {
         throw new ApiError(400, "Resume Name and user id is required");
       }
 
       const resumelocalpath = req.file?.path;
+      if (!resumelocalpath) {
+        throw new ApiError(400, "Resume file is required");
+      }
 
       const createdResume = await createInitialRecord(
         resumeName,
@@ -51,9 +54,9 @@ const uploadResume = asyncHandler(
   },
 );
 const analyzeResume = asyncHandler(
-  async (req: Request, res: Response): Promise<void> => {
+  async (req: Request, res: Response)=> {
     try {
-      const user_id = req.user?.id;
+      const user_id = req.user!.id;
       const resumeDetails = req.resumeDetails;
       const analysisDetails =
         await createResumeAnalysisOperation(user_id,resumeDetails);

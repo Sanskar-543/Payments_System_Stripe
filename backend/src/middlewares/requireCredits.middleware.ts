@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 export const requireCredits = (requiredCredits: bigint) =>
   asyncHandler(async (req, _res, next) => {
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     const result = await db
       .select({
